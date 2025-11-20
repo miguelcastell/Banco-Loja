@@ -53,10 +53,10 @@ Sistema completo de gestão de pedidos com controle de estoque, pagamentos e can
 
 ### 1. Configuração Inicial
 Execute os scripts na seguinte ordem:
-1. **tabelas.sql** - Criação das tabelas e índices
-2. **triggers.sql** - Criação das triggers
-3. **procedures.sql** - Criação das procedures e functions
-4. **dados_iniciais.sql** - Inserção de dados básicos
+1. **entrega_um.sql** - Criação das tabelas e Inserts de dados
+2. **entrega_dois.sql** - Criação das triggers
+3. **entrega_tress.sql** - Criação das procedures e functions
+4. **testes.sql** - Rodar os testes 
 
 ### 2. Sequência de Execução
 ```sql
