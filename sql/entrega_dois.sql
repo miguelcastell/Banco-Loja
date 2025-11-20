@@ -13,8 +13,7 @@ BEGIN
         ), 0)
         INTO estoque_atual
         FROM estoque
-        WHERE produto_id = NEW.produto_id 
-        AND estoque_id != NEW.estoque_id;
+        WHERE produto_id = NEW.produto_id;
 
         IF estoque_atual < NEW.quantidade THEN
             RAISE EXCEPTION 
@@ -93,6 +92,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     estoque_atual INT;
 BEGIN
+    
     SELECT COALESCE(SUM(
         CASE 
             WHEN tipo = 'ENTRADA' THEN quantidade
@@ -111,19 +111,21 @@ BEGIN
 
     INSERT INTO estoque (
         produto_id,
-        pedido_id,
         tipo,
         quantidade,
         origem_tipo,
+        origem_id,
+        observacoes,
         criado_em,
         atualizado_em
     )
     VALUES (
         NEW.produto_id,
-        NEW.pedido_id,
         'SAIDA',
         NEW.quantidade,
         'VENDA',
+        NEW.pedido_id,
+        'Saída por venda - Pedido ' || NEW.pedido_id,
         NOW(),
         NOW()
     );
@@ -142,18 +144,20 @@ RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO estoque (
         produto_id,
-        entrada_id,
         tipo,
         quantidade,
         origem_tipo,
+        origem_id,
+        observacoes,
         criado_em,
         atualizado_em
     ) VALUES (
         NEW.produto_id,
-        NEW.entrada_id,
         'ENTRADA',
-        NEW.quantidade::INT,
-        'ENTRADA_FORNECEDOR',
+        NEW.quantidade,
+        'COMPRA',
+        NEW.entrada_id,
+        'Entrada de compra - Entrada ' || NEW.entrada_id,
         NOW(),
         NOW()
     );
@@ -166,8 +170,6 @@ CREATE TRIGGER trg_registrar_entrada_estoque
 AFTER INSERT ON entrada_itens
 FOR EACH ROW
 EXECUTE FUNCTION registrar_entrada_estoque();
-
--- Views
 
 CREATE OR REPLACE VIEW vw_vendas_por_dia AS
 SELECT 

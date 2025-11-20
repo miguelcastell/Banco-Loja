@@ -73,7 +73,7 @@ SELECT
     p.data_pedido
 FROM pedidos p
 JOIN clientes c ON p.cliente_id = c.cliente_id
-WHERE p.pedido_id = 7;
+WHERE p.pedido_id = 2;
 
 -- Teste 3: Cancelar outro pedido. Ver estoque voltar e status = CANCELADO.
 DO $$
@@ -104,7 +104,7 @@ BEGIN
         (SELECT COALESCE(SUM(CASE WHEN tipo='ENTRADA' THEN quantidade ELSE -quantidade END), 0) FROM estoque WHERE produto_id = 4);
     
     RAISE NOTICE 'Lançamentos de entrada por cancelamento: %',
-        (SELECT COUNT(*) FROM estoque WHERE pedido_id = v_pedido_id AND tipo = 'ENTRADA' AND origem_tipo = 'CANCELAMENTO');
+        (SELECT COUNT(*) FROM estoque WHERE origem_id = v_pedido_id AND tipo = 'ENTRADA' AND origem_tipo = 'CANCELAMENTO');
 END $$;
 
 SELECT 
@@ -114,17 +114,17 @@ SELECT
     e.tipo,
     e.quantidade,
     e.origem_tipo,
-    e.pedido_id,
+    e.origem_id,
     e.data_movimentacao
 FROM estoque e
 JOIN produtos pr ON e.produto_id = pr.produto_id
-WHERE e.pedido_id = 10
+WHERE e.origem_id = (SELECT MAX(pedido_id) FROM pedidos WHERE cliente_id = 3 AND status = 'CANCELADO')
 ORDER BY e.data_movimentacao;
 
 -- Teste 4: Caso de erro: tentar vender sem estoque; verificar rollback e mensagem.
 DO $$
 DECLARE
-    itens_pedido4 JSON := '[{"produto_id": 4, "quantidade": 100, "preco_unit": 89.90, "desconto": 0.00}]';
+    itens_pedido4 JSON := '[{"produto_id": 4, "quantidade": 1000, "preco_unit": 89.90, "desconto": 0.00}]';
 BEGIN
     CALL criar_pedido(4, itens_pedido4);
 EXCEPTION

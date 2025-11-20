@@ -34,7 +34,8 @@ $$;
 
 CREATE OR REPLACE PROCEDURE criar_pedido(
     p_cliente_id BIGINT,
-    p_itens JSON
+    p_itens JSON,
+    p_endereco_entrega_id BIGINT DEFAULT NULL
 )
 LANGUAGE plpgsql
 AS $$
@@ -51,8 +52,8 @@ BEGIN
         RAISE EXCEPTION 'ERRO: Cliente com ID % não encontrado.', p_cliente_id;
     END IF;
 
-    INSERT INTO pedidos (cliente_id, status, data_pedido, criado_em, atualizado_em)
-    VALUES (p_cliente_id, 'ABERTO', CURRENT_DATE, NOW(), NOW())
+    INSERT INTO pedidos (cliente_id, endereco_entrega_id, status, data_pedido, criado_em, atualizado_em)
+    VALUES (p_cliente_id, p_endereco_entrega_id, 'ABERTO', CURRENT_DATE, NOW(), NOW())
     RETURNING pedido_id INTO v_pedido_id;
 
     FOR v_item IN
@@ -106,24 +107,26 @@ BEGIN
         );
 
         INSERT INTO estoque (
-            pedido_id,
+            produto_id,
             tipo,
             quantidade,
             origem_tipo,
+            origem_id,
+            observacoes,
             data_movimentacao,
             criado_em,
-            atualizado_em,
-            produto_id
+            atualizado_em
         )
         VALUES (
-            v_pedido_id,
+            v_produto_id,
             'SAIDA',
             v_quantidade_saida,
             'VENDA',
+            v_pedido_id,
+            'Saída por venda - Pedido ' || v_pedido_id,
             NOW(),
             NOW(),
-            NOW(),
-            v_produto_id
+            NOW()
         );
 
     END LOOP;
@@ -226,19 +229,23 @@ BEGIN
         WHERE pedido_id = p_pedido_id
     LOOP
         INSERT INTO estoque (
-            pedido_id,
+            produto_id,
             tipo,
             quantidade,
             origem_tipo,
+            origem_id,
+            observacoes,
             data_movimentacao,
             criado_em,
             atualizado_em
         )
         VALUES (
-            p_pedido_id,
+            v_item.produto_id,
             'ENTRADA',
             v_item.quantidade,
             'CANCELAMENTO',
+            p_pedido_id,
+            'Reversão por cancelamento - Pedido ' || p_pedido_id,
             NOW(),
             NOW(),
             NOW()
